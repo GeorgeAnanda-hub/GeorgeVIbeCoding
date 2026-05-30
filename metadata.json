@@ -1,0 +1,6 @@
+{
+  "name": "Cham Cham Cham AI",
+  "description": "Interactive Cham Cham Cham game with a Gemini Game Master and AI referee.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
