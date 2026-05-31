@@ -142,9 +142,8 @@ export function registerSpeechListener(listener: SpeechListener) {
 }
 
 export function speakText(text: string) {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  if (typeof window === "undefined") return;
   try {
-    window.speechSynthesis.cancel();
     if (speechListener) {
       speechListener(text);
     }
@@ -163,30 +162,15 @@ export function speakText(text: string) {
       return;
     }
 
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = "id-ID";
-    utterance.rate = 1.35; // Speak faster
-
-    utterance.onend = () => {
+    // Voice functionality has been muted based on user request.
+    // We only display the subtitles via a timeout of 5 seconds.
+    setTimeout(() => {
       if (speechListener) {
         speechListener(null);
       }
-    };
-    utterance.onerror = () => {
-      if (speechListener) {
-        speechListener(null);
-      }
-    };
-    
-    const voices = window.speechSynthesis.getVoices();
-    const idVoice = voices.find(v => v.lang.toLowerCase().includes("id") || v.lang.toLowerCase().includes("in"));
-    if (idVoice) {
-      utterance.voice = idVoice;
-    }
-    
-    window.speechSynthesis.speak(utterance);
+    }, 5000);
   } catch (err) {
-    console.warn("Speech synthesis failed", err);
+    console.warn("Speech display failed", err);
     if (speechListener) {
       speechListener(null);
     }
@@ -197,13 +181,6 @@ let currentTTSAudio: HTMLAudioElement | null = null;
 
 export async function speakTextWithTTS(text: string, opponentId: string) {
   try {
-    // Stop currently playing TTS audio if any
-    if (currentTTSAudio) {
-      currentTTSAudio.pause();
-      currentTTSAudio.currentTime = 0;
-      currentTTSAudio = null;
-    }
-
     if (!text) {
       if (speechListener) {
         speechListener(null);
@@ -214,61 +191,20 @@ export async function speakTextWithTTS(text: string, opponentId: string) {
     if (speechListener) {
       speechListener(text);
     }
+    
+    // Voice functionality has been muted based on user request.
+    // We only display the subtitles, skipping the TTS API call, with a fixed 5s timeout.
+    const cleanText = text
+      .replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, "")
+      .replace(/[&#*\";👈👉👆🎯⚡🛡️⚔️•]/g, "")
+      .trim();
 
-    const response = await fetch("/api/tts", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ text, opponentId })
-    });
-
-    if (!response.ok) {
-      throw new Error("TTS API call failed");
-    }
-
-    const data = await response.json();
-    if (!data.audio) {
-      console.warn("No audio returned from TTS API, falling back to Web Speech");
-      speakText(text);
-      return;
-    }
-
-    const mimeType = data.mimeType || "audio/mp3";
-    const audioDataUrl = `data:${mimeType};base64,${data.audio}`;
-
-    const audio = new Audio(audioDataUrl);
-    audio.playbackRate = 1.35; // Accelerate AI speaking speed to keep matches dynamic and responsive
-    currentTTSAudio = audio;
-
-    audio.onended = () => {
-      if (speechListener && currentTTSAudio === audio) {
+    setTimeout(() => {
+      if (speechListener) {
         speechListener(null);
       }
-    };
-    audio.onpause = () => {
-      if (speechListener && currentTTSAudio === audio) {
-        speechListener(null);
-      }
-    };
-    audio.onerror = () => {
-      if (speechListener && currentTTSAudio === audio) {
-        speechListener(null);
-      }
-    };
-
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-      playPromise.catch((err) => {
-        console.warn("TTS Audio autoplay interrupted or blocked by browser policy:", err);
-        if (speechListener && currentTTSAudio === audio) {
-          speechListener(null);
-        }
-      });
-    }
+    }, 5000);
   } catch (err) {
-    console.warn("speakTextWithTTS failed, falling back to Web Speech API", err);
-    // Use classic Web Speech API as fallback
     speakText(text);
   }
 }
