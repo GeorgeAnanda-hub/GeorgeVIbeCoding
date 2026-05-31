@@ -1212,8 +1212,8 @@ export default function GameScreen({
         setUserAction(null);
       }, 3500);
 
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.warn("Referee API handled fallback gracefully:", err.message || err);
       // Failover safely on backend/API connection issues
       setUserAction(fallbackDirection);
 
@@ -1426,10 +1426,6 @@ export default function GameScreen({
                 transition={{ duration: 0.18 }}
                 className="absolute inset-x-4 bottom-4 bg-black/92 backdrop-blur-md text-white border border-pink-500/40 px-4 py-2.5 rounded-2xl text-xs font-semibold leading-relaxed tracking-wide text-center z-30 shadow-[0_4px_25px_rgba(236,72,153,0.35)] flex flex-col items-center gap-1 select-none pointer-events-none"
               >
-                <div className="flex items-center gap-1.5 text-[9px] uppercase font-mono font-bold tracking-widest text-pink-400">
-                  <span className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-ping" />
-                  {opponent.name} BERKATA:
-                </div>
                 <span className="text-white text-[11px] sm:text-xs">"{activeSubtitle}"</span>
               </motion.div>
             )}

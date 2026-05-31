@@ -283,7 +283,10 @@ Kembalikan hasil dalam bentuk JSON murni dengan format schema berikut:
 
     res.json(resultObject);
   } catch (error: any) {
-    console.error("Referee API Error:", error);
+    const isRateLimit = error?.message?.includes("429") || error?.status === "RESOURCE_EXHAUSTED" || error?.status === 429;
+    if (!isRateLimit) {
+      console.log("Referee API Error (fallback will be used):", error.message || error);
+    }
     res.status(500).json({
       error: error.message || "Failed to contact Referee AI Engine"
     });
@@ -339,7 +342,11 @@ app.post("/api/tts", async (req, res) => {
   } catch (error: any) {
     // Graceful fallback: warn the server console but don't crash nor return a 500 error.
     // Returning 200 with audio: null triggers a perfect seamless fallback to the browser's Web Speech API.
-    console.warn("TTS API handled fallback gracefully:", error.message || error);
+    // We suppress the full error stack to avoid log bloat on rate limits.
+    const isRateLimit = error?.message?.includes("429") || error?.status === "RESOURCE_EXHAUSTED" || error?.status === 429;
+    if (!isRateLimit) {
+      console.log("TTS API handled fallback gracefully. Underlying issue:", error.message || error);
+    }
     res.json({ audio: null, mimeType: null, error: error.message || "TTS Model preview unavailable in this context" });
   }
 });
